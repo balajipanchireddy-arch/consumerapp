@@ -107,20 +107,16 @@
                 <!-- --- PANTRY TAB --- -->
                 <div class="tab-panel active" id="panel-pantry">
                     
-                    <!-- Sync Status -->
                     <div class="sync-indicator">
                         <span class="dot online" id="syncDot"></span>
                         <span id="syncText">🟢 Connected to Firebase</span>
                         <span style="margin-left:auto;font-size:11px;color:#888;" id="lastSyncTime">Last sync: Now</span>
                     </div>
                     
-                    <!-- Alert Banner -->
                     <div id="alertBanner" style="display:none;"></div>
                     
-                    <!-- Pantry Items -->
                     <div id="pantryList"></div>
                     
-                    <!-- Simulate Purchase -->
                     <div class="simulate-section">
                         <h3><i class="fas fa-shopping-bag"></i> Simulate Store Purchase</h3>
                         <p style="font-size:11px;color:#888;margin-bottom:8px;">Items added here will appear in your pantry with expiry alerts</p>
@@ -166,7 +162,7 @@
                         <div class="empty-state">
                             <i class="fas fa-list"></i>
                             <h3>Your Shopping List</h3>
-                            <p>Items you need to buy will appear here.</p>
+                            <p>Add items you need to buy.</p>
                         </div>
                     </div>
                     <div style="margin-top:12px;">
@@ -196,7 +192,6 @@
                 </button>
             </div>
 
-            <!-- Logout Button -->
             <div style="padding:10px 16px 70px 16px;text-align:center;">
                 <button onclick="logoutUser()" style="background:none;border:none;color:#c62828;font-size:12px;cursor:pointer;padding:8px 16px;">
                     <i class="fas fa-sign-out-alt"></i> Logout
@@ -213,7 +208,7 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- ============================================================ -->
-    <!-- JAVASCRIPT -->
+    <!-- JAVASCRIPT - External file -->
     <!-- ============================================================ -->
     <script src="script.js"></script>
 
