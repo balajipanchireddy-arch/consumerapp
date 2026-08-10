@@ -1,0 +1,686 @@
+/* ================================================================
+   GLOBAL STYLES
+   ================================================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: #f0f4f8;
+    padding: 10px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+/* ================================================================
+   APP CONTAINER
+   ================================================================ */
+.app-container {
+    background: #f8fafc;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    min-height: 800px;
+    position: relative;
+}
+
+/* ================================================================
+   STATUS BAR
+   ================================================================ */
+.status-bar {
+    background: #1a3a5c;
+    color: white;
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+/* ================================================================
+   APP HEADER
+   ================================================================ */
+.app-header {
+    background: linear-gradient(135deg, #1a3a5c, #2a5f7a);
+    color: white;
+    padding: 16px 18px 30px 18px;
+    position: relative;
+}
+
+.app-header .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.app-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.app-header h1 i {
+    color: #4fc3f7;
+    margin-right: 6px;
+}
+
+.app-header .badge {
+    background: rgba(255,255,255,0.15);
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.app-header .badge .dot {
+    width: 6px;
+    height: 6px;
+    background: #4fc3f7;
+    border-radius: 50%;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.app-header .welcome {
+    margin-top: 8px;
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.app-header .welcome strong {
+    font-size: 16px;
+}
+
+/* ================================================================
+   QUICK STATS
+   ================================================================ */
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.quick-stats .stat {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+}
+
+.quick-stats .stat .num {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.quick-stats .stat .label {
+    font-size: 10px;
+    opacity: 0.8;
+}
+
+.quick-stats .stat.warning .num { color: #ffb74d; }
+.quick-stats .stat.danger .num { color: #ef5350; }
+.quick-stats .stat.success .num { color: #81c784; }
+
+/* ================================================================
+   SYNC INDICATOR
+   ================================================================ */
+.sync-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: #555;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.sync-indicator .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.sync-indicator .dot.online { background: #4caf50; }
+.sync-indicator .dot.syncing { background: #ff9800; animation: pulse 1s infinite; }
+.sync-indicator .dot.offline { background: #f44336; }
+
+/* ================================================================
+   TAB NAVIGATION
+   ================================================================ */
+.tab-nav {
+    display: flex;
+    background: white;
+    border-bottom: 1px solid #e8edf3;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.tab-nav button {
+    flex: 1;
+    padding: 12px 0;
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    transition: 0.3s;
+    position: relative;
+}
+
+.tab-nav button i {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 2px;
+}
+
+.tab-nav button.active {
+    color: #1a3a5c;
+}
+
+.tab-nav button.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 3px;
+    background: #1a3a5c;
+    border-radius: 3px;
+}
+
+.tab-nav button .badge-count {
+    background: #f44336;
+    color: white;
+    border-radius: 50%;
+    padding: 1px 6px;
+    font-size: 9px;
+    position: absolute;
+    top: 4px;
+    right: 10px;
+}
+
+/* ================================================================
+   TAB CONTENT
+   ================================================================ */
+.tab-content {
+    padding: 14px 16px 80px 16px;
+    background: #f8fafc;
+    min-height: 500px;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+/* ================================================================
+   ALERT BANNER
+   ================================================================ */
+.alert-banner {
+    background: #fff3e0;
+    border-left: 4px solid #ff9800;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alert-banner.danger {
+    background: #ffebee;
+    border-left-color: #f44336;
+}
+
+.alert-banner .icon {
+    font-size: 20px;
+}
+
+.alert-banner .msg {
+    font-size: 12px;
+    flex: 1;
+}
+
+.alert-banner .msg strong {
+    display: block;
+    font-size: 14px;
+}
+
+/* ================================================================
+   PANTRY ITEMS
+   ================================================================ */
+.pantry-item {
+    background: white;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: 0.2s;
+}
+
+.pantry-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.pantry-item .icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.pantry-item .icon-box.fresh { background: #e8f5e9; color: #2e7d32; }
+.pantry-item .icon-box.expiring { background: #fff3e0; color: #e65100; }
+.pantry-item .icon-box.expired { background: #ffebee; color: #c62828; }
+
+.pantry-item .info {
+    flex: 1;
+}
+
+.pantry-item .info .name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a3a5c;
+}
+
+.pantry-item .info .details {
+    font-size: 11px;
+    color: #888;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pantry-item .info .details .expiry {
+    font-weight: 600;
+}
+
+.pantry-item .info .details .expiry.urgent { color: #e65100; }
+.pantry-item .info .details .expiry.danger { color: #c62828; }
+
+.pantry-item .badge-status {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.pantry-item .badge-status.fresh { background: #e8f5e9; color: #2e7d32; }
+.pantry-item .badge-status.expiring { background: #fff3e0; color: #e65100; }
+.pantry-item .badge-status.expired { background: #ffebee; color: #c62828; }
+
+.pantry-item .actions {
+    display: flex;
+    gap: 4px;
+}
+
+.pantry-item .actions button {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: 0.2s;
+}
+
+.pantry-item .actions .use-btn {
+    background: #e3f2fd;
+    color: #0d47a1;
+}
+
+.pantry-item .actions .use-btn:hover { background: #bbdefb; }
+
+.pantry-item .actions .recipe-btn {
+    background: #f3e5f5;
+    color: #6a1b9a;
+}
+
+.pantry-item .actions .recipe-btn:hover { background: #e1bee7; }
+
+.pantry-item .actions .delete-btn {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.pantry-item .actions .delete-btn:hover { background: #ffcdd2; }
+
+/* ================================================================
+   ALERT ITEMS
+   ================================================================ */
+.alert-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    background: #fff8e1;
+    border-left: 4px solid #ff9800;
+}
+
+.alert-item.danger {
+    background: #ffebee;
+    border-left-color: #f44336;
+}
+
+.alert-item .alert-msg {
+    font-size: 12px;
+}
+
+.alert-item .alert-msg strong {
+    font-size: 14px;
+}
+
+.alert-item .alert-msg .alert-time {
+    font-size: 11px;
+    color: #888;
+}
+
+.alert-item .alert-action {
+    background: #c62828;
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+/* ================================================================
+   RECIPE CARDS
+   ================================================================ */
+.recipe-card {
+    background: white;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    display: flex;
+    gap: 12px;
+}
+
+.recipe-card .emoji {
+    font-size: 30px;
+}
+
+.recipe-card .info {
+    flex: 1;
+}
+
+.recipe-card .info .name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a3a5c;
+}
+
+.recipe-card .info .ingredients {
+    font-size: 11px;
+    color: #888;
+}
+
+.recipe-card .info .match {
+    font-size: 10px;
+    color: #2e7d32;
+    font-weight: 600;
+}
+
+.recipe-card .btn {
+    background: #1a3a5c;
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    align-self: center;
+}
+
+/* ================================================================
+   SHOPPING LIST
+   ================================================================ */
+.shopping-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.shopping-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #1a3a5c;
+}
+
+.shopping-item .name {
+    flex: 1;
+    font-size: 13px;
+}
+
+.shopping-item .name.done {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* ================================================================
+   SIMULATE SECTION
+   ================================================================ */
+.simulate-section {
+    background: #e8edf3;
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 12px;
+}
+
+.simulate-section h3 {
+    font-size: 13px;
+    color: #1a3a5c;
+    margin-bottom: 8px;
+}
+
+.simulate-section .btn-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.simulate-section .btn-row button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.simulate-section .btn-row button:hover {
+    transform: scale(1.02);
+}
+
+.simulate-section .btn-row .buy-btn {
+    background: #1a3a5c;
+    color: white;
+}
+
+.simulate-section .btn-row .buy-btn:hover { background: #2a5f7a; }
+
+.simulate-section .btn-row .clear-btn {
+    background: #e0e0e0;
+    color: #555;
+}
+
+.simulate-section .btn-row .clear-btn:hover { background: #d0d0d0; }
+
+/* ================================================================
+   ADD LIST BUTTON
+   ================================================================ */
+.add-list-btn {
+    width: 100%;
+    padding: 10px;
+    background: #1a3a5c;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.add-list-btn:hover {
+    background: #2a5f7a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 58, 92, 0.3);
+}
+
+/* ================================================================
+   EMPTY STATE
+   ================================================================ */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+}
+
+.empty-state i {
+    font-size: 50px;
+    color: #d0d9e6;
+    margin-bottom: 12px;
+}
+
+.empty-state h3 {
+    color: #555;
+    margin-bottom: 4px;
+}
+
+.empty-state p {
+    font-size: 13px;
+}
+
+/* ================================================================
+   BOTTOM NAV
+   ================================================================ */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: white;
+    display: flex;
+    border-top: 1px solid #e8edf3;
+    padding: 6px 0 12px 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+    z-index: 20;
+}
+
+.bottom-nav button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: 10px;
+    color: #888;
+    cursor: pointer;
+    transition: 0.3s;
+    padding: 4px 0;
+}
+
+.bottom-nav button i {
+    display: block;
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.bottom-nav button.active {
+    color: #1a3a5c;
+}
+
+.bottom-nav button .nav-badge {
+    background: #f44336;
+    color: white;
+    border-radius: 50%;
+    padding: 1px 6px;
+    font-size: 9px;
+    position: absolute;
+    margin-top: -8px;
+    margin-left: 2px;
+}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+.toast-container {
+    position: fixed;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 90%;
+    max-width: 440px;
+}
+
+.toast {
+    color: white;
+    padding: 10px 16px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    animation: slideDown 0.5s ease;
+    font-size: 13px;
+}
+
+.toast.danger { background: #c62828; }
+.toast.success { background: #2e7d32; }
+.toast.warning { background: #e65100; }
+.toast.info { background: #0d47a1; }
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.toast .toast-title { font-weight: 700; font-size: 14px; }
+.toast .toast-msg { font-size: 12px; margin-top: 2px; opacity: 0.9; }
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+@media (max-width: 480px) {
+    body { padding: 5px; }
+    .app-container { border-radius: 12px; }
+    .app-header { padding: 12px 14px 20px 14px; }
+    .app-header h1 { font-size: 18px; }
+    .tab-content { padding: 10px 12px 70px 12px; }
+    .quick-stats .stat .num { font-size: 17px; }
+}
