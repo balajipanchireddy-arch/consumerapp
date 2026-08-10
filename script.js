@@ -111,6 +111,7 @@ function registerUser() {
         document.getElementById('mobileDisplay').style.fontSize = '11px';
         document.getElementById('mobileDisplay').style.opacity = '0.7';
         
+        // ✅ Load data after registration
         loadUserData(fullMobile);
         updateUI();
     }).catch(error => {
@@ -154,6 +155,7 @@ function checkRegistration() {
         document.getElementById('consumerName').textContent = userName;
         document.getElementById('mobileDisplay').textContent = `📱 ${registeredUser.mobile}`;
         
+        // ✅ Load data if registered
         loadUserData(registeredUser.mobile);
         updateUI();
         return true;
@@ -162,52 +164,67 @@ function checkRegistration() {
 }
 
 // ================================================================
-// LOAD USER DATA FROM FIREBASE (Real-time) - FIXED
+// ✅ FIXED: LOAD USER DATA FROM FIREBASE (Real-time)
 // ================================================================
 function loadUserData(mobile) {
+    if (!mobile) {
+        console.error('❌ loadUserData: No mobile number provided');
+        return;
+    }
+    
     const userRef = db.ref('users/' + mobile);
     
+    // Remove existing listener
     if (window._pantryListener) {
         window._pantryListener();
         window._pantryListener = null;
     }
     
+    // ✅ Set up real-time listener
     window._pantryListener = userRef.on('value', function(snapshot) {
         const data = snapshot.val();
-        if (data) {
-            // ✅ FIX: Convert object to array
-            const pantryData = data.pantryItems || {};
-            
-            // Convert object to array
-            const pantryArray = Object.keys(pantryData).map(key => ({
-                ...pantryData[key],
-                firebaseKey: key
-            }));
-            
-            const oldCount = pantryItems.length;
-            
-            pantryItems = pantryArray.map(p => ({
-                ...p,
-                expiry: new Date(p.expiry),
-                purchaseDate: new Date(p.purchaseDate),
-                alertSent: p.alertSent || {
-                    '7d': false,
-                    '3d': false,
-                    '1d': false,
-                    'expired': false
-                }
-            }));
-            
-            shoppingItems = data.shoppingList || [];
-            alertHistory = data.alertHistory || [];
-            
-            if (pantryItems.length > oldCount && oldCount > 0) {
-                const newCount = pantryItems.length - oldCount;
-                showToast('📦', 'New Items Added!', `${newCount} item(s) synced from shop.`, 'success');
-            }
-            
-            updateUI();
+        
+        if (!data) {
+            console.log('ℹ️ No data found for user:', mobile);
+            return;
         }
+        
+        // ✅ FIX: Convert pantryItems object to array
+        const pantryData = data.pantryItems || {};
+        
+        // ✅ Convert object to array using Object.keys()
+        const pantryArray = Object.keys(pantryData).map(key => ({
+            ...pantryData[key],
+            firebaseKey: key
+        }));
+        
+        const oldCount = pantryItems.length;
+        
+        // ✅ Map to pantry items with proper date conversion
+        pantryItems = pantryArray.map(p => ({
+            ...p,
+            expiry: new Date(p.expiry),
+            purchaseDate: new Date(p.purchaseDate),
+            alertSent: p.alertSent || {
+                '7d': false,
+                '3d': false,
+                '1d': false,
+                'expired': false
+            }
+        }));
+        
+        shoppingItems = data.shoppingList || [];
+        alertHistory = data.alertHistory || [];
+        
+        // ✅ Show notification for new items
+        if (pantryItems.length > oldCount && oldCount > 0) {
+            const newCount = pantryItems.length - oldCount;
+            showToast('📦', 'New Items Added!', `${newCount} item(s) synced from shop.`, 'success');
+        }
+        
+        updateUI();
+    }, function(error) {
+        console.error('❌ Firebase listener error:', error);
     });
 }
 
@@ -215,12 +232,15 @@ function loadUserData(mobile) {
 // SAVE USER DATA TO FIREBASE
 // ================================================================
 function saveUserData() {
-    if (!registeredUser) return;
+    if (!registeredUser) {
+        console.warn('⚠️ Cannot save: No user registered');
+        return;
+    }
     
     const mobile = registeredUser.mobile;
     const userRef = db.ref('users/' + mobile);
     
-    // Convert array back to object for Firebase
+    // ✅ Convert array back to object for Firebase
     const pantryData = {};
     pantryItems.forEach(p => {
         const key = p.firebaseKey || Date.now() + '_' + Math.random();
@@ -242,7 +262,7 @@ function saveUserData() {
     };
     
     userRef.update(data).catch(error => {
-        console.error('Save error:', error);
+        console.error('❌ Save error:', error);
         showToast('❌', 'Save Error', 'Could not save data.', 'danger');
     });
 }
@@ -858,12 +878,24 @@ document.addEventListener('DOMContentLoaded', function() {
 // INIT
 // ================================================================
 function init() {
+    console.log('🚀 SmartShelf Consumer App Initializing...');
+    
     const isRegistered = checkRegistration();
     
     if (!isRegistered) {
+        console.log('ℹ️ User not registered, showing registration form');
         document.getElementById('registrationSection').style.display = 'flex';
         document.getElementById('mainAppContent').style.display = 'none';
         document.getElementById('mobileInput').focus();
+    } else {
+        console.log('✅ User already registered:', registeredUser.mobile);
+        // ✅ Force load data after registration
+        setTimeout(() => {
+            if (registeredUser && registeredUser.mobile) {
+                loadUserData(registeredUser.mobile);
+                updateUI();
+            }
+        }, 500);
     }
 }
 
