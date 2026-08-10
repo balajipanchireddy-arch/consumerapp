@@ -28,11 +28,23 @@ let userName = 'Guest';
 // ICON MAP
 // ================================================================
 const iconMap = {
-    'Milk': '🥛', 'Bread': '🍞', 'Eggs': '🥚', 'Cheese': '🧀',
-    'Chicken': '🍗', 'Yogurt': '🍦', 'Orange Juice': '🧃',
-    'Butter': '🧈', 'Apple': '🍎', 'Banana': '🍌', 'Tomato': '🍅',
-    'Potato': '🥔', 'Onion': '🧅', 'Garlic': '🧄', 'Rice': '🍚',
-    'Pasta': '🍝', 'Cereal': '🥣'
+    'Milk': '🥛',
+    'Bread': '🍞',
+    'Eggs': '🥚',
+    'Cheese': '🧀',
+    'Chicken': '🍗',
+    'Yogurt': '🍦',
+    'Orange Juice': '🧃',
+    'Butter': '🧈',
+    'Apple': '🍎',
+    'Banana': '🍌',
+    'Tomato': '🍅',
+    'Potato': '🥔',
+    'Onion': '🧅',
+    'Garlic': '🧄',
+    'Rice': '🍚',
+    'Pasta': '🍝',
+    'Cereal': '🥣'
 };
 
 function getEmoji(name) {
@@ -50,8 +62,16 @@ function registerUser() {
     const mobile = mobileInput.value.trim();
     const errorDiv = document.getElementById('registrationError');
     
-    if (mobile.length < 10 || !/^\d{10}$/.test(mobile)) {
-        errorDiv.textContent = mobile.length < 10 ? '⚠️ Please enter a valid 10-digit mobile number' : '⚠️ Please enter only numbers (10 digits)';
+    if (mobile.length < 10) {
+        errorDiv.textContent = '⚠️ Please enter a valid 10-digit mobile number';
+        errorDiv.style.display = 'block';
+        errorDiv.classList.add('show');
+        mobileInput.focus();
+        return;
+    }
+    
+    if (!/^\d{10}$/.test(mobile)) {
+        errorDiv.textContent = '⚠️ Please enter only numbers (10 digits)';
         errorDiv.style.display = 'block';
         errorDiv.classList.add('show');
         mobileInput.focus();
@@ -63,18 +83,24 @@ function registerUser() {
     
     userRef.once('value').then(snapshot => {
         const data = snapshot.val();
+        
         if (data) {
             registeredUser = data;
             userName = data.name || 'User';
             showToast('👋', 'Welcome Back!', `${userName}, your pantry is ready.`, 'success');
         } else {
-            userRef.set({ name: 'User', mobile: fullMobile, registeredAt: Date.now() });
+            userRef.set({
+                name: 'User',
+                mobile: fullMobile,
+                registeredAt: Date.now()
+            });
             registeredUser = { name: 'User', mobile: fullMobile };
             userName = 'User';
             showToast('🎉', 'Registration Successful!', 'Welcome to SmartShelf!', 'success');
         }
         
         localStorage.setItem('currentUser', JSON.stringify(registeredUser));
+        
         document.getElementById('registrationSection').style.display = 'none';
         document.getElementById('mainAppContent').style.display = 'block';
         document.getElementById('consumerName').textContent = userName;
@@ -97,11 +123,14 @@ function logoutUser() {
         pantryItems = [];
         shoppingItems = [];
         alertHistory = [];
+        
         document.getElementById('registrationSection').style.display = 'flex';
         document.getElementById('mainAppContent').style.display = 'none';
         document.getElementById('mobileInput').value = '';
         document.getElementById('registrationError').style.display = 'none';
+        
         showToast('👋', 'Logged Out', 'See you next time!', 'info');
+        
         if (window._pantryListener) {
             window._pantryListener();
             window._pantryListener = null;
@@ -114,10 +143,12 @@ function checkRegistration() {
     if (savedUser) {
         registeredUser = JSON.parse(savedUser);
         userName = registeredUser.name || 'User';
+        
         document.getElementById('registrationSection').style.display = 'none';
         document.getElementById('mainAppContent').style.display = 'block';
         document.getElementById('consumerName').textContent = userName;
         document.getElementById('mobileDisplay').textContent = `📱 ${registeredUser.mobile}`;
+        
         loadUserData(registeredUser.mobile);
         updateUI();
         return true;
@@ -126,7 +157,7 @@ function checkRegistration() {
 }
 
 // ================================================================
-// ✅ FIXED: LOAD USER DATA (Converts Firebase object to array)
+// LOAD USER DATA FROM FIREBASE
 // ================================================================
 function loadUserData(mobile) {
     if (!mobile) {
@@ -148,11 +179,11 @@ function loadUserData(mobile) {
             return;
         }
         
-        // ✅ FIX: Convert pantryItems object to array
+        // Convert pantryItems object to array
         const pantryData = data.pantryItems || {};
         const oldCount = pantryItems.length;
         
-        // ✅ Use Object.keys() instead of .map() directly on object
+        // ✅ Use Object.keys() to convert object to array
         const pantryArray = Object.keys(pantryData).map(key => ({
             ...pantryData[key],
             firebaseKey: key
@@ -188,10 +219,15 @@ function saveUserData() {
     const mobile = registeredUser.mobile;
     const userRef = db.ref('users/' + mobile);
     
+    // Convert array back to object for Firebase
     const pantryData = {};
     pantryItems.forEach(p => {
         const key = p.firebaseKey || Date.now() + '_' + Math.random();
-        pantryData[key] = { ...p, expiry: p.expiry.toISOString(), purchaseDate: p.purchaseDate.toISOString() };
+        pantryData[key] = {
+            ...p,
+            expiry: p.expiry.toISOString(),
+            purchaseDate: p.purchaseDate.toISOString()
+        };
         delete pantryData[key].firebaseKey;
     });
     
@@ -206,7 +242,7 @@ function saveUserData() {
 }
 
 // ================================================================
-// ITEM FUNCTIONS
+// ✅ FIXED: ADD ITEM TO PANTRY
 // ================================================================
 function addToPantry(name, price, expiryDays) {
     if (!registeredUser) {
@@ -217,33 +253,58 @@ function addToPantry(name, price, expiryDays) {
     const now = new Date();
     const expiry = new Date(now);
     expiry.setDate(expiry.getDate() + expiryDays);
-    expiry.setMinutes(expiry.getMinutes() + Math.floor(Math.random() * 5) + 1);
     
-    pantryItems.unshift({
+    const randomMins = Math.floor(Math.random() * 5) + 1;
+    expiry.setMinutes(expiry.getMinutes() + randomMins);
+
+    const item = {
         id: Date.now(),
-        name, price,
+        name: name,
+        price: price,
         expiry: expiry.toISOString(),
         purchaseDate: now.toISOString(),
         isConsumed: false,
         discount: Math.random() > 0.5 ? Math.floor(Math.random() * 30) + 10 : 0,
         syncedFromShop: false,
-        alertSent: { '7d': false, '3d': false, '1d': false, 'expired': false }
-    });
+        alertSent: {
+            '7d': false,
+            '3d': false,
+            '1d': false,
+            'expired': false
+        }
+    };
+
+    console.log('📦 Adding item:', item);
     
+    pantryItems.unshift(item);
     saveUserData();
+    
+    const discountText = item.discount > 0 ? ` (${item.discount}% off!)` : '';
     showToast('🛒', 'Added to Pantry!', `${name} added${discountText}`, 'success');
+    
     updateUI();
 }
 
+// ================================================================
+// ✅ FIXED: SIMULATE PURCHASE
+// ================================================================
 function simulatePurchase(name, price, expiryDays) {
     if (!registeredUser) {
-        showToast('⚠️', 'Not Registered', 'Please register first.', 'warning');
+        showToast('⚠️', 'Not Registered', 'Please register with your mobile number first.', 'warning');
         return;
     }
+    
+    console.log('🛒 Simulating purchase:', name, price, expiryDays);
+    
     const days = expiryDays || Math.floor(Math.random() * 9) + 1;
     addToPantry(name, price, days);
+    
     if (!shoppingItems.find(item => item.name === name)) {
-        shoppingItems.push({ id: Date.now() + 1, name, checked: false });
+        shoppingItems.push({
+            id: Date.now() + 1,
+            name: name,
+            checked: false
+        });
         saveUserData();
     }
 }
@@ -255,50 +316,69 @@ function getItemStatus(item) {
     const now = new Date();
     const expiry = new Date(item.expiry);
     const timeLeft = (expiry - now) / 1000 / 60 / 60 / 24;
-    if (timeLeft < 0) return { status: 'expired', label: 'Expired', daysLeft: 0 };
-    if (timeLeft <= 1) return { status: 'expiring', label: '⚠️ Expires TODAY!', daysLeft: timeLeft };
-    if (timeLeft <= 3) return { status: 'expiring', label: `⚠️ ${Math.ceil(timeLeft)} days left`, daysLeft: timeLeft };
-    if (timeLeft <= 7) return { status: 'expiring', label: `${Math.ceil(timeLeft)} days left`, daysLeft: timeLeft };
-    return { status: 'fresh', label: `${Math.ceil(timeLeft)} days left`, daysLeft: timeLeft };
+    
+    if (timeLeft < 0) {
+        return { status: 'expired', label: 'Expired', daysLeft: 0 };
+    } else if (timeLeft <= 1) {
+        return { status: 'expiring', label: '⚠️ Expires TODAY!', daysLeft: timeLeft };
+    } else if (timeLeft <= 3) {
+        return { status: 'expiring', label: `⚠️ ${Math.ceil(timeLeft)} days left`, daysLeft: timeLeft };
+    } else if (timeLeft <= 7) {
+        return { status: 'expiring', label: `${Math.ceil(timeLeft)} days left`, daysLeft: timeLeft };
+    } else {
+        return { status: 'fresh', label: `${Math.ceil(timeLeft)} days left`, daysLeft: timeLeft };
+    }
 }
 
 // ================================================================
-// ALERTS
+// CHECK AND TRIGGER ALERTS
 // ================================================================
 function checkAlerts() {
     const now = new Date();
     let newAlerts = [];
+    
     pantryItems.forEach(item => {
         if (item.isConsumed) return;
-        const timeLeft = (new Date(item.expiry) - now) / 1000 / 60 / 60 / 24;
+        
+        const expiry = new Date(item.expiry);
+        const timeLeft = (expiry - now) / 1000 / 60 / 60 / 24;
+        
         if (timeLeft <= 7 && timeLeft > 6.5 && !item.alertSent['7d']) {
             item.alertSent['7d'] = true;
-            newAlerts.push({ item, type: 'warning', msg: `📦 ${item.name} expires in 7 days!` });
+            newAlerts.push({ item: item, type: 'warning', msg: `📦 ${item.name} expires in 7 days!` });
             showToast('⏰', '7 Day Warning', `${item.name} expires in 7 days. Plan to use it!`, 'warning');
         } else if (timeLeft <= 3 && timeLeft > 2.5 && !item.alertSent['3d']) {
             item.alertSent['3d'] = true;
-            newAlerts.push({ item, type: 'warning', msg: `⚠️ ${item.name} expires in 3 days!` });
+            newAlerts.push({ item: item, type: 'warning', msg: `⚠️ ${item.name} expires in 3 days!` });
             showToast('⚠️', '3 Day Warning', `${item.name} expires in 3 days! Time to use it.`, 'warning');
         } else if (timeLeft <= 1 && timeLeft > 0.5 && !item.alertSent['1d']) {
             item.alertSent['1d'] = true;
-            newAlerts.push({ item, type: 'danger', msg: `🚨 ${item.name} expires TOMORROW!` });
+            newAlerts.push({ item: item, type: 'danger', msg: `🚨 ${item.name} expires TOMORROW!` });
             showToast('🚨', '1 Day Warning', `${item.name} expires TOMORROW! Use it today!`, 'danger');
             showRecipeSuggestion(item.name);
         } else if (timeLeft < 0 && !item.alertSent['expired']) {
             item.alertSent['expired'] = true;
-            newAlerts.push({ item, type: 'danger', msg: `💀 ${item.name} has EXPIRED!` });
+            newAlerts.push({ item: item, type: 'danger', msg: `💀 ${item.name} has EXPIRED!` });
             showToast('💀', 'EXPIRED!', `${item.name} has expired! Please discard it.`, 'danger');
         }
     });
+    
     if (newAlerts.length > 0) {
         alertHistory = [...newAlerts, ...alertHistory];
         saveUserData();
-        if (newAlerts.some(a => a.type === 'danger')) playAlertSound('danger');
-        else playAlertSound('warning');
+        if (newAlerts.some(a => a.type === 'danger')) {
+            playAlertSound('danger');
+        } else {
+            playAlertSound('warning');
+        }
     }
+    
     return newAlerts;
 }
 
+// ================================================================
+// RECIPE SUGGESTIONS
+// ================================================================
 function showRecipeSuggestion(itemName) {
     const recipes = {
         'Milk': '🥣 Make pancakes, smoothies, or mac and cheese!',
@@ -309,13 +389,21 @@ function showRecipeSuggestion(itemName) {
         'Yogurt': '🍦 Make smoothie, parfait, or use in baking!',
         'Orange Juice': '🧃 Make smoothie, marinade, or popsicles!'
     };
+    
     let suggestion = '🍳 Try using it in a recipe today!';
     for (let [key, value] of Object.entries(recipes)) {
-        if (itemName.includes(key)) { suggestion = value; break; }
+        if (itemName.includes(key)) {
+            suggestion = value;
+            break;
+        }
     }
+    
     showToast('🍳', 'Recipe Idea!', suggestion, 'info');
 }
 
+// ================================================================
+// AUDIO
+// ================================================================
 function playAlertSound(type = 'danger') {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -323,20 +411,30 @@ function playAlertSound(type = 'danger') {
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
+        
         if (type === 'danger') {
-            osc.frequency.value = 800; osc.type = 'square'; gain.gain.value = 0.1;
-            osc.start(); setTimeout(() => osc.stop(), 300);
+            osc.frequency.value = 800;
+            osc.type = 'square';
+            gain.gain.value = 0.1;
+            osc.start();
+            setTimeout(() => osc.stop(), 300);
             setTimeout(() => {
                 const osc2 = ctx.createOscillator();
                 const gain2 = ctx.createGain();
                 osc2.connect(gain2);
                 gain2.connect(ctx.destination);
-                osc2.frequency.value = 600; osc2.type = 'square'; gain2.gain.value = 0.1;
-                osc2.start(); setTimeout(() => osc2.stop(), 300);
+                osc2.frequency.value = 600;
+                osc2.type = 'square';
+                gain2.gain.value = 0.1;
+                osc2.start();
+                setTimeout(() => osc2.stop(), 300);
             }, 200);
         } else {
-            osc.frequency.value = 600; osc.type = 'sine'; gain.gain.value = 0.08;
-            osc.start(); setTimeout(() => osc.stop(), 300);
+            osc.frequency.value = 600;
+            osc.type = 'sine';
+            gain.gain.value = 0.08;
+            osc.start();
+            setTimeout(() => osc.stop(), 300);
         }
     } catch(e) {}
 }
@@ -347,12 +445,14 @@ function playAlertSound(type = 'danger') {
 function formatDate(date) {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
+
 function formatTimeLeft(days) {
     if (days < 0) return 'EXPIRED';
     if (days < 1) return `${Math.floor(days * 24)} hours`;
     if (days < 7) return `${Math.ceil(days)} days`;
     return `${Math.floor(days)} days`;
 }
+
 function formatTime(date) {
     return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
@@ -364,7 +464,10 @@ function showToast(icon, title, msg, type = 'info') {
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<div class="toast-title">${icon} ${title}</div><div class="toast-msg">${msg}</div>`;
+    toast.innerHTML = `
+        <div class="toast-title">${icon} ${title}</div>
+        <div class="toast-msg">${msg}</div>
+    `;
     container.appendChild(toast);
     setTimeout(() => {
         toast.style.opacity = '0';
@@ -412,15 +515,25 @@ function clearAllItems() {
 function addShoppingItem() {
     const name = prompt('Enter item name:');
     if (name && name.trim()) {
-        shoppingItems.push({ id: Date.now(), name: name.trim(), checked: false });
+        shoppingItems.push({
+            id: Date.now(),
+            name: name.trim(),
+            checked: false
+        });
         saveUserData();
         updateUI();
     }
 }
+
 function toggleShoppingItem(id) {
     const item = shoppingItems.find(s => s.id === id);
-    if (item) { item.checked = !item.checked; saveUserData(); updateUI(); }
+    if (item) {
+        item.checked = !item.checked;
+        saveUserData();
+        updateUI();
+    }
 }
+
 function removeShoppingItem(id) {
     shoppingItems = shoppingItems.filter(s => s.id !== id);
     saveUserData();
@@ -433,15 +546,21 @@ function removeShoppingItem(id) {
 function switchTab(tabName) {
     document.querySelectorAll('.tab-nav button, .bottom-nav button').forEach(btn => {
         btn.classList.remove('active');
-        if (btn.dataset.tab === tabName) btn.classList.add('active');
+        if (btn.dataset.tab === tabName) {
+            btn.classList.add('active');
+        }
     });
+    
     document.querySelectorAll('.tab-panel').forEach(panel => {
         panel.classList.remove('active');
     });
     document.getElementById(`panel-${tabName}`).classList.add('active');
 }
+
 document.querySelectorAll('.tab-nav button, .bottom-nav button').forEach(btn => {
-    btn.addEventListener('click', function() { switchTab(this.dataset.tab); });
+    btn.addEventListener('click', function() {
+        switchTab(this.dataset.tab);
+    });
 });
 
 // ================================================================
@@ -449,12 +568,17 @@ document.querySelectorAll('.tab-nav button, .bottom-nav button').forEach(btn => 
 // ================================================================
 function updateUI() {
     if (!registeredUser) return;
+    
     checkAlerts();
     
     const now = new Date();
-    let totalItems = 0, expiringCount = 0, expiredCount = 0;
+    let totalItems = 0;
+    let expiringCount = 0;
+    let expiredCount = 0;
+    
     const activeItems = pantryItems.filter(p => !p.isConsumed);
     const consumedItems = pantryItems.filter(p => p.isConsumed);
+    
     const sortedItems = [...activeItems].sort((a, b) => {
         const statusA = getItemStatus(a);
         const statusB = getItemStatus(b);
@@ -462,6 +586,7 @@ function updateUI() {
         if (statusA.status !== 'expired' && statusB.status === 'expired') return 1;
         return new Date(a.expiry) - new Date(b.expiry);
     });
+    
     sortedItems.forEach(item => {
         const status = getItemStatus(item);
         if (status.status === 'expired') expiredCount++;
@@ -469,20 +594,31 @@ function updateUI() {
         totalItems++;
     });
     
-    // --- Pantry ---
     const pantryContainer = document.getElementById('pantryList');
     let html = '';
+    
     if (sortedItems.length === 0 && consumedItems.length === 0) {
-        html = `<div class="empty-state"><i class="fas fa-warehouse"></i><h3>Your Pantry is Empty</h3><p>Shop at SmartShelf and your purchases will appear here!</p></div>`;
+        html = `
+            <div class="empty-state">
+                <i class="fas fa-warehouse"></i>
+                <h3>Your Pantry is Empty</h3>
+                <p>Shop at SmartShelf and your purchases will appear here!</p>
+            </div>
+        `;
     } else {
         sortedItems.forEach(item => {
             const status = getItemStatus(item);
             const emoji = getEmoji(item.name);
-            const iconClass = status.status === 'fresh' ? 'fresh' : status.status === 'expiring' ? 'expiring' : 'expired';
-            const badgeClass = status.status === 'fresh' ? 'fresh' : status.status === 'expiring' ? 'expiring' : 'expired';
-            const expiryClass = status.status === 'expired' ? 'danger' : status.status === 'expiring' ? 'urgent' : '';
+            const iconClass = status.status === 'fresh' ? 'fresh' : 
+                             status.status === 'expiring' ? 'expiring' : 'expired';
+            const badgeClass = status.status === 'fresh' ? 'fresh' : 
+                              status.status === 'expiring' ? 'expiring' : 'expired';
+            const expiryClass = status.status === 'expired' ? 'danger' : 
+                               status.status === 'expiring' ? 'urgent' : '';
+            
             const discountText = item.discount > 0 ? ` (${item.discount}% off)` : '';
             const syncedTag = item.syncedFromShop ? '🔄' : '';
+            
             html += `
                 <div class="pantry-item">
                     <div class="icon-box ${iconClass}">${emoji}</div>
@@ -496,12 +632,19 @@ function updateUI() {
                     </div>
                     <span class="badge-status ${badgeClass}">${status.label}</span>
                     <div class="actions">
-                        ${status.status !== 'expired' ? `<button class="use-btn" onclick="consumeItem(${item.id})" title="Mark as used"><i class="fas fa-check"></i></button>` : ''}
-                        <button class="delete-btn" onclick="deleteItem(${item.id})" title="Remove"><i class="fas fa-trash"></i></button>
+                        ${status.status !== 'expired' ? `
+                            <button class="use-btn" onclick="consumeItem(${item.id})" title="Mark as used">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        ` : ''}
+                        <button class="delete-btn" onclick="deleteItem(${item.id})" title="Remove">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             `;
         });
+        
         if (consumedItems.length > 0) {
             html += `<div style="margin-top:10px;font-size:12px;color:#888;padding:4px 0;border-top:1px solid #e0e0e0;">✅ Used Items</div>`;
             consumedItems.forEach(item => {
@@ -520,49 +663,88 @@ function updateUI() {
     }
     pantryContainer.innerHTML = html;
     
-    // --- Alert Banner ---
     const banner = document.getElementById('alertBanner');
-    const urgentItems = sortedItems.filter(item => getItemStatus(item).status === 'expiring' && getItemStatus(item).daysLeft <= 3);
-    const expiredItemsList = sortedItems.filter(item => getItemStatus(item).status === 'expired');
+    const urgentItems = sortedItems.filter(item => {
+        const status = getItemStatus(item);
+        return status.status === 'expiring' && status.daysLeft <= 3;
+    });
+    
+    const expiredItemsList = sortedItems.filter(item => {
+        const status = getItemStatus(item);
+        return status.status === 'expired';
+    });
+    
     if (expiredItemsList.length > 0) {
         banner.style.display = 'flex';
         banner.className = 'alert-banner danger';
-        banner.innerHTML = `<span class="icon">💀</span><div class="msg"><strong>${expiredItemsList.length} Item(s) Expired!</strong><span>Please remove them from your pantry.</span></div>`;
+        banner.innerHTML = `
+            <span class="icon">💀</span>
+            <div class="msg">
+                <strong>${expiredItemsList.length} Item(s) Expired!</strong>
+                <span>Please remove them from your pantry.</span>
+            </div>
+        `;
     } else if (urgentItems.length > 0) {
         banner.style.display = 'flex';
         banner.className = 'alert-banner';
-        banner.innerHTML = `<span class="icon">⚠️</span><div class="msg"><strong>${urgentItems.length} Item(s) Expiring Soon!</strong><span>Use them before ${formatDate(urgentItems[0].expiry)}</span></div>`;
+        banner.innerHTML = `
+            <span class="icon">⚠️</span>
+            <div class="msg">
+                <strong>${urgentItems.length} Item(s) Expiring Soon!</strong>
+                <span>Use them before ${formatDate(urgentItems[0].expiry)}</span>
+            </div>
+        `;
     } else {
         banner.style.display = 'none';
     }
     
-    // --- Alerts Tab ---
     const alertsContainer = document.getElementById('alertsList');
     const activeAlerts = alertHistory.filter(a => {
         const item = pantryItems.find(p => p.id === a.item.id);
         return item && !item.isConsumed;
     });
+    
     if (activeAlerts.length === 0) {
-        alertsContainer.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle"></i><h3>All Clear!</h3><p>No alerts right now. Keep it up! 🎉</p></div>`;
+        alertsContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-check-circle"></i>
+                <h3>All Clear!</h3>
+                <p>No alerts right now. Keep it up! 🎉</p>
+            </div>
+        `;
     } else {
         let alertHtml = '';
         activeAlerts.slice(0, 20).forEach(alert => {
             const isDanger = alert.type === 'danger';
             alertHtml += `
                 <div class="alert-item ${isDanger ? 'danger' : ''}">
-                    <div class="alert-msg"><strong>${alert.msg}</strong><div class="alert-time">📅 ${formatDate(alert.item.expiry)}</div></div>
-                    <button class="alert-action" onclick="deleteItem(${alert.item.id})">Remove</button>
+                    <div class="alert-msg">
+                        <strong>${alert.msg}</strong>
+                        <div class="alert-time">📅 ${formatDate(alert.item.expiry)}</div>
+                    </div>
+                    <button class="alert-action" onclick="deleteItem(${alert.item.id})">
+                        Remove
+                    </button>
                 </div>
             `;
         });
         alertsContainer.innerHTML = alertHtml;
     }
     
-    // --- Recipes ---
     const recipesContainer = document.getElementById('recipesList');
-    const expiringItems = sortedItems.filter(item => getItemStatus(item).status === 'expiring' && getItemStatus(item).daysLeft <= 5);
+    const expiringItems = sortedItems.filter(item => {
+        const status = getItemStatus(item);
+        return status.status === 'expiring' && status.daysLeft <= 5;
+    });
+    
     if (expiringItems.length === 0) {
-        recipesContainer.innerHTML = `<div class="empty-state"><i class="fas fa-utensils"></i><h3>No Recipes Yet</h3><p>Add items that are expiring soon and we'll suggest recipes!</p></div>`;
+        recipesContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-utensils"></i>
+                <h3>No Recipes Yet</h3>
+                <p>Add items that are expiring soon and we'll suggest recipes!</p>
+            </div>
+        `;
     } else {
         let recipeHtml = '';
         const recipeIdeas = [
@@ -573,16 +755,30 @@ function updateUI() {
             { name: '🍗 Chicken Stir-fry', ingredients: 'Chicken, Vegetables', match: 'Chicken' },
             { name: '🥗 Chicken Salad', ingredients: 'Chicken, Eggs', match: 'Chicken, Eggs' }
         ];
+        
         const expiringNames = expiringItems.map(i => i.name);
         let matchedRecipes = [];
+        
         recipeIdeas.forEach(recipe => {
             const recipeItems = recipe.match.split(', ');
-            const matchCount = recipeItems.filter(r => expiringNames.some(n => n.includes(r) || r.includes(n))).length;
-            if (matchCount > 0) matchedRecipes.push({ ...recipe, matchCount });
+            const matchCount = recipeItems.filter(r => 
+                expiringNames.some(n => n.includes(r) || r.includes(n))
+            ).length;
+            if (matchCount > 0) {
+                matchedRecipes.push({ ...recipe, matchCount });
+            }
         });
+        
         matchedRecipes.sort((a, b) => b.matchCount - a.matchCount);
+        
         if (matchedRecipes.length === 0) {
-            recipesContainer.innerHTML = `<div class="empty-state"><i class="fas fa-utensils"></i><h3>No Recipe Matches</h3><p>Try adding more variety to your pantry!</p></div>`;
+            recipesContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-utensils"></i>
+                    <h3>No Recipe Matches</h3>
+                    <p>Try adding more variety to your pantry!</p>
+                </div>
+            `;
         } else {
             matchedRecipes.slice(0, 5).forEach(recipe => {
                 recipeHtml += `
@@ -601,10 +797,15 @@ function updateUI() {
         }
     }
     
-    // --- Shopping List ---
     const shoppingContainer = document.getElementById('shoppingList');
     if (shoppingItems.length === 0) {
-        shoppingContainer.innerHTML = `<div class="empty-state"><i class="fas fa-list"></i><h3>Your Shopping List</h3><p>Add items you need to buy.</p></div>`;
+        shoppingContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-list"></i>
+                <h3>Your Shopping List</h3>
+                <p>Add items you need to buy.</p>
+            </div>
+        `;
     } else {
         let shopHtml = '';
         shoppingItems.forEach(item => {
@@ -612,21 +813,24 @@ function updateUI() {
                 <div class="shopping-item">
                     <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShoppingItem(${item.id})" />
                     <span class="name ${item.checked ? 'done' : ''}">${item.name}</span>
-                    <button onclick="removeShoppingItem(${item.id})" style="background:none;border:none;color:#c62828;cursor:pointer;"><i class="fas fa-times"></i></button>
+                    <button onclick="removeShoppingItem(${item.id})" style="background:none;border:none;color:#c62828;cursor:pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             `;
         });
         shoppingContainer.innerHTML = shopHtml;
     }
     
-    // --- Stats ---
     document.getElementById('totalItems').textContent = totalItems;
     document.getElementById('expiringItems').textContent = expiringCount;
     document.getElementById('expiredItems').textContent = expiredCount;
+    
     document.getElementById('pantryBadge').textContent = totalItems;
     document.getElementById('alertBadge').textContent = activeAlerts.length;
     document.getElementById('bottomPantryBadge').textContent = totalItems;
     document.getElementById('bottomAlertBadge').textContent = activeAlerts.length;
+    
     document.getElementById('lastSyncTime').textContent = `Last sync: ${formatTime(new Date())}`;
     document.getElementById('liveTime').textContent = `⏰ ${formatTime(new Date())}`;
 }
@@ -636,7 +840,9 @@ function updateUI() {
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('mobileInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') registerUser();
+        if (e.key === 'Enter') {
+            registerUser();
+        }
     });
 });
 
@@ -645,7 +851,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // ================================================================
 function init() {
     console.log('🚀 SmartShelf Consumer App Initializing...');
+    
     const isRegistered = checkRegistration();
+    
     if (!isRegistered) {
         console.log('ℹ️ User not registered, showing registration form');
         document.getElementById('registrationSection').style.display = 'flex';
