@@ -1,4 +1,22 @@
 // ================================================================
+// FIREBASE CONFIG - YOUR CONFIG HERE
+// ================================================================
+const firebaseConfig = {
+    apiKey: "AIzaSyDxfTPMySvXDNkAF0-ruIvGhiV23H1GcVs",
+    authDomain: "myproject-facd5.firebaseapp.com",
+    databaseURL: "https://myproject-facd5-default-rtdb.firebaseio.com",
+    projectId: "myproject-facd5",
+    storageBucket: "myproject-facd5.firebasestorage.app",
+    messagingSenderId: "967008076076",
+    appId: "1:967008076076:web:e34160a72525210ba1ec89",
+    measurementId: "G-B7EX225NTR"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ================================================================
 // DATA
 // ================================================================
 let pantryItems = [];
@@ -63,53 +81,53 @@ function registerUser() {
         return;
     }
     
-    // Check if user already exists in shop's registered users
-    let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    
-    // Format mobile with country code
     const fullMobile = '+91' + mobile;
     
-    // Check if already registered
-    const existingUser = registeredUsers.find(u => u.mobile === fullMobile);
-    
-    if (existingUser) {
-        // User exists - welcome back
-        registeredUser = existingUser;
-        userName = existingUser.name || 'User';
-        showToast('👋', 'Welcome Back!', `${userName}, your pantry is ready.`, 'success');
-    } else {
-        // New user - register
-        const newUser = {
-            id: Date.now(),
-            name: 'User',
-            mobile: fullMobile,
-            registeredAt: new Date().toISOString()
-        };
-        registeredUsers.push(newUser);
-        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-        registeredUser = newUser;
-        userName = 'User';
-        showToast('🎉', 'Registration Successful!', 'Welcome to SmartShelf!', 'success');
-    }
-    
-    // Save user to localStorage
-    localStorage.setItem('currentUser', JSON.stringify(registeredUser));
-    
-    // Hide registration, show app
-    document.getElementById('registrationSection').style.display = 'none';
-    document.getElementById('mainAppContent').style.display = 'block';
-    
-    // Update welcome message
-    document.getElementById('consumerName').textContent = userName;
-    document.getElementById('mobileDisplay').textContent = `📱 ${fullMobile}`;
-    document.getElementById('mobileDisplay').style.fontSize = '11px';
-    document.getElementById('mobileDisplay').style.opacity = '0.7';
-    
-    // Load user's data
-    loadUserData(fullMobile);
-    
-    // Update UI
-    updateUI();
+    // Check if user exists in Firebase
+    const userRef = db.ref('users/' + fullMobile);
+    userRef.once('value').then(snapshot => {
+        const data = snapshot.val();
+        
+        if (data) {
+            // User exists - welcome back
+            registeredUser = data;
+            userName = data.name || 'User';
+            showToast('👋', 'Welcome Back!', `${userName}, your pantry is ready.`, 'success');
+        } else {
+            // New user - register
+            const newUser = {
+                name: 'User',
+                mobile: fullMobile,
+                registeredAt: Date.now()
+            };
+            userRef.set(newUser);
+            registeredUser = newUser;
+            userName = 'User';
+            showToast('🎉', 'Registration Successful!', 'Welcome to SmartShelf!', 'success');
+        }
+        
+        // Store user in localStorage for session persistence
+        localStorage.setItem('currentUser', JSON.stringify(registeredUser));
+        
+        // Hide registration, show app
+        document.getElementById('registrationSection').style.display = 'none';
+        document.getElementById('mainAppContent').style.display = 'block';
+        
+        // Update welcome message
+        document.getElementById('consumerName').textContent = userName;
+        document.getElementById('mobileDisplay').textContent = `📱 ${fullMobile}`;
+        document.getElementById('mobileDisplay').style.fontSize = '11px';
+        document.getElementById('mobileDisplay').style.opacity = '0.7';
+        
+        // Load user's data from Firebase
+        loadUserData(fullMobile);
+        updateUI();
+    }).catch(error => {
+        console.error('Registration error:', error);
+        errorDiv.textContent = '❌ Could not connect to server. Please try again.';
+        errorDiv.style.display = 'block';
+        errorDiv.classList.add('show');
+    });
 }
 
 function logoutUser() {
@@ -126,6 +144,12 @@ function logoutUser() {
         document.getElementById('registrationError').style.display = 'none';
         
         showToast('👋', 'Logged Out', 'See you next time!', 'info');
+        
+        // Unsubscribe from Firebase listener
+        if (window._pantryListener) {
+            window._pantryListener();
+            window._pantryListener = null;
+        }
     }
 }
 
@@ -148,95 +172,92 @@ function checkRegistration() {
 }
 
 // ================================================================
-// LOAD USER DATA FROM LOCAL STORAGE
+// LOAD USER DATA FROM FIREBASE (Real-time)
 // ================================================================
 function loadUserData(mobile) {
-    const storageKey = `consumer_${mobile}`;
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        pantryItems = data.pantryItems || [];
-        shoppingItems = data.shoppingList || [];
-        alertHistory = data.alertHistory || [];
-        
-        pantryItems.forEach(p => {
-            p.expiry = new Date(p.expiry);
-            p.purchaseDate = new Date(p.purchaseDate);
-            p.alertSent = p.alertSent || {
-                '7d': false,
-                '3d': false,
-                '1d': false,
-                'expired': false
-            };
-        });
-    } else {
-        // Load demo data for new users
-        loadDemoData();
+    const userRef = db.ref('users/' + mobile);
+    
+    // Remove existing listener
+    if (window._pantryListener) {
+        window._pantryListener();
+        window._pantryListener = null;
     }
+    
+    // Set up real-time listener
+    window._pantryListener = userRef.on('value', function(snapshot) {
+        const data = snapshot.val();
+        if (data) {
+            const pantryData = data.pantryItems || [];
+            const shoppingData = data.shoppingList || [];
+            const alertData = data.alertHistory || [];
+            
+            // Check if there are new items (for notification)
+            const oldCount = pantryItems.length;
+            
+            pantryItems = pantryData.map(p => ({
+                ...p,
+                expiry: new Date(p.expiry),
+                purchaseDate: new Date(p.purchaseDate),
+                alertSent: p.alertSent || {
+                    '7d': false,
+                    '3d': false,
+                    '1d': false,
+                    'expired': false
+                }
+            }));
+            
+            shoppingItems = shoppingData || [];
+            alertHistory = alertData || [];
+            
+            // Show notification for new items
+            if (pantryItems.length > oldCount && oldCount > 0) {
+                const newCount = pantryItems.length - oldCount;
+                showToast('📦', 'New Items Added!', `${newCount} item(s) synced from shop.`, 'success');
+            }
+            
+            updateUI();
+        }
+    });
 }
 
 // ================================================================
-// SAVE USER DATA
+// SAVE USER DATA TO FIREBASE
 // ================================================================
 function saveUserData() {
     if (!registeredUser) return;
     
-    const storageKey = `consumer_${registeredUser.mobile}`;
-    localStorage.setItem(storageKey, JSON.stringify({
-        pantryItems: pantryItems,
-        shoppingList: shoppingItems,
-        alertHistory: alertHistory
-    }));
-}
-
-// ================================================================
-// CHECK FOR NEW ITEMS FROM SHOP (Based on mobile number)
-// ================================================================
-function checkForNewItems() {
-    if (!registeredUser) return;
-    
     const mobile = registeredUser.mobile;
-    const shopKey = `shop_purchases_${mobile}`;
-    const saved = localStorage.getItem(shopKey);
+    const userRef = db.ref('users/' + mobile);
     
-    if (saved) {
-        const newItems = JSON.parse(saved);
-        let addedCount = 0;
-        
-        newItems.forEach(newItem => {
-            // Check if item already exists in pantry
-            if (!pantryItems.find(p => p.id === newItem.id && p.syncedFromShop)) {
-                pantryItems.push({
-                    ...newItem,
-                    expiry: new Date(newItem.expiry),
-                    purchaseDate: new Date(newItem.purchaseDate),
-                    syncedFromShop: true,
-                    alertSent: {
-                        '7d': false,
-                        '3d': false,
-                        '1d': false,
-                        'expired': false
-                    }
-                });
-                addedCount++;
-            }
-        });
-        
-        if (addedCount > 0) {
-            showToast('📦', 'New Items Synced!', `${addedCount} item(s) from shop added to your pantry.`, 'success');
-            saveUserData();
-            updateUI();
-        }
-        
-        // Clear the shop purchases after syncing
-        localStorage.removeItem(shopKey);
-    }
+    // Prepare data for Firebase
+    const data = {
+        pantryItems: pantryItems.map(p => ({
+            ...p,
+            expiry: p.expiry.toISOString(),
+            purchaseDate: p.purchaseDate.toISOString()
+        })),
+        shoppingList: shoppingItems,
+        alertHistory: alertHistory,
+        name: registeredUser.name || 'User',
+        mobile: mobile,
+        lastUpdated: Date.now()
+    };
+    
+    userRef.update(data).catch(error => {
+        console.error('Save error:', error);
+        showToast('❌', 'Save Error', 'Could not save data.', 'danger');
+    });
 }
 
 // ================================================================
-// ADD ITEM TO PANTRY (Simulating purchase from POS)
+// ADD ITEM TO PANTRY
 // ================================================================
 function addToPantry(name, price, expiryDays) {
+    if (!registeredUser) {
+        showToast('⚠️', 'Not Registered', 'Please register first.', 'warning');
+        return;
+    }
+    
     const now = new Date();
     const expiry = new Date(now);
     expiry.setDate(expiry.getDate() + expiryDays);
@@ -248,8 +269,8 @@ function addToPantry(name, price, expiryDays) {
         id: Date.now(),
         name: name,
         price: price,
-        expiry: expiry,
-        purchaseDate: now,
+        expiry: expiry.toISOString(),
+        purchaseDate: now.toISOString(),
         isConsumed: false,
         discount: Math.random() > 0.5 ? Math.floor(Math.random() * 30) + 10 : 0,
         syncedFromShop: false,
@@ -265,7 +286,7 @@ function addToPantry(name, price, expiryDays) {
     saveUserData();
     
     const discountText = item.discount > 0 ? ` (${item.discount}% off!)` : '';
-    showToast('🛒', 'Added to Pantry!', `${name} added${discountText} - Expires ${formatDate(expiry)}`, 'success');
+    showToast('🛒', 'Added to Pantry!', `${name} added${discountText}`, 'success');
     
     updateUI();
 }
@@ -297,7 +318,8 @@ function simulatePurchase(name, price, expiryDays) {
 // ================================================================
 function getItemStatus(item) {
     const now = new Date();
-    const timeLeft = (item.expiry - now) / 1000 / 60 / 60 / 24;
+    const expiry = new Date(item.expiry);
+    const timeLeft = (expiry - now) / 1000 / 60 / 60 / 24;
     
     if (timeLeft < 0) {
         return { status: 'expired', label: 'Expired', daysLeft: 0 };
@@ -322,7 +344,8 @@ function checkAlerts() {
     pantryItems.forEach(item => {
         if (item.isConsumed) return;
         
-        const timeLeft = (item.expiry - now) / 1000 / 60 / 60 / 24;
+        const expiry = new Date(item.expiry);
+        const timeLeft = (expiry - now) / 1000 / 60 / 60 / 24;
         
         if (timeLeft <= 7 && timeLeft > 6.5 && !item.alertSent['7d']) {
             item.alertSent['7d'] = true;
@@ -424,7 +447,7 @@ function playAlertSound(type = 'danger') {
 // FORMAT HELPERS
 // ================================================================
 function formatDate(date) {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function formatTimeLeft(days) {
@@ -435,7 +458,7 @@ function formatTimeLeft(days) {
 }
 
 function formatTime(date) {
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
 // ================================================================
@@ -571,7 +594,7 @@ function updateUI() {
         const statusB = getItemStatus(b);
         if (statusA.status === 'expired' && statusB.status !== 'expired') return -1;
         if (statusA.status !== 'expired' && statusB.status === 'expired') return 1;
-        return a.expiry - b.expiry;
+        return new Date(a.expiry) - new Date(b.expiry);
     });
     
     sortedItems.forEach(item => {
@@ -826,58 +849,7 @@ function updateUI() {
     
     // --- Sync Status ---
     document.getElementById('lastSyncTime').textContent = `Last sync: ${formatTime(new Date())}`;
-    
-    // --- Live Time in Status Bar ---
     document.getElementById('liveTime').textContent = `⏰ ${formatTime(new Date())}`;
-}
-
-// ================================================================
-// DEMO DATA
-// ================================================================
-function loadDemoData() {
-    const now = new Date();
-    
-    const demoItems = [
-        { name: 'Fresh Milk', price: 4.99, days: 2 },
-        { name: 'Whole Bread', price: 3.49, days: 3 },
-        { name: 'Cheddar Cheese', price: 5.99, days: 5 },
-        { name: 'Free-Range Eggs', price: 6.99, days: 7 },
-        { name: 'Organic Yogurt', price: 3.99, days: 4 },
-        { name: 'Orange Juice', price: 4.49, days: 6 }
-    ];
-    
-    demoItems.forEach(item => {
-        const expiry = new Date(now);
-        expiry.setDate(expiry.getDate() + item.days);
-        expiry.setHours(expiry.getHours() + Math.floor(Math.random() * 12));
-        
-        pantryItems.push({
-            id: Date.now() + Math.random() * 1000,
-            name: item.name,
-            price: item.price,
-            expiry: expiry,
-            purchaseDate: now,
-            isConsumed: false,
-            discount: item.days < 3 ? 30 : (item.days < 5 ? 15 : 0),
-            syncedFromShop: false,
-            alertSent: {
-                '7d': false,
-                '3d': false,
-                '1d': false,
-                'expired': false
-            }
-        });
-    });
-    
-    shoppingItems = [
-        { id: 1, name: 'Butter', checked: false },
-        { id: 2, name: 'Chicken', checked: false },
-        { id: 3, name: 'Tomatoes', checked: true }
-    ];
-    
-    saveUserData();
-    showToast('🎯', 'Demo Loaded!', '6 demo items added to your pantry.', 'success');
-    updateUI();
 }
 
 // ================================================================
@@ -898,25 +870,10 @@ function init() {
     const isRegistered = checkRegistration();
     
     if (!isRegistered) {
-        // Show registration
         document.getElementById('registrationSection').style.display = 'flex';
         document.getElementById('mainAppContent').style.display = 'none';
         document.getElementById('mobileInput').focus();
     }
-    
-    // Check for new items every 5 seconds
-    setInterval(() => {
-        if (registeredUser) {
-            checkForNewItems();
-        }
-    }, 5000);
-    
-    // Update UI every second
-    setInterval(() => {
-        if (registeredUser) {
-            updateUI();
-        }
-    }, 1000);
 }
 
 document.addEventListener('DOMContentLoaded', init);
