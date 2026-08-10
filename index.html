@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Smart Consumer App</title>
+    <title>SmartShelf - Consumer App</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <link rel="stylesheet" href="stylee.css" />
@@ -29,8 +29,9 @@
                     <span class="dot"></span> LIVE
                 </span>
             </div>
-            <div class="welcome">
-                👋 Welcome back, <strong id="consumerName">BALAJI</strong>
+            <div class="welcome" id="welcomeMessage">
+                👋 Welcome, <strong id="consumerName">Guest</strong>
+                <span style="font-size:11px;opacity:0.7;margin-left:8px;" id="mobileDisplay"></span>
             </div>
             <div class="quick-stats">
                 <div class="stat">
@@ -48,121 +49,156 @@
             </div>
         </div>
 
-        <!-- TAB NAVIGATION -->
-        <div class="tab-nav" id="tabNav">
-            <button class="active" data-tab="pantry">
-                <i class="fas fa-warehouse"></i> Pantry
-                <span class="badge-count" id="pantryBadge">0</span>
-            </button>
-            <button data-tab="alerts">
-                <i class="fas fa-bell"></i> Alerts
-                <span class="badge-count" id="alertBadge">0</span>
-            </button>
-            <button data-tab="recipes">
-                <i class="fas fa-utensils"></i> Recipes
-            </button>
-            <button data-tab="shopping">
-                <i class="fas fa-list"></i> List
-            </button>
-        </div>
-
         <!-- ============================================================ -->
-        <!-- TAB CONTENT -->
+        <!-- REGISTRATION SECTION -->
         <!-- ============================================================ -->
-        <div class="tab-content">
-            
-            <!-- --- PANTRY TAB --- -->
-            <div class="tab-panel active" id="panel-pantry">
-                
-                <!-- Sync Status -->
-                <div class="sync-indicator">
-                    <span class="dot online" id="syncDot"></span>
-                    <span id="syncText">🟢 Connected to Shop</span>
-                    <span style="margin-left:auto;font-size:11px;color:#888;" id="lastSyncTime">Last sync: Now</span>
+        <div class="registration-section" id="registrationSection">
+            <div class="registration-card">
+                <div class="reg-icon">
+                    <i class="fas fa-mobile-alt"></i>
                 </div>
-                
-                <!-- Alert Banner -->
-                <div id="alertBanner" style="display:none;"></div>
-                
-                <!-- Pantry Items -->
-                <div id="pantryList"></div>
-                
-                <!-- Simulate Purchase -->
-                <div class="simulate-section">
-                    <h3><i class="fas fa-shopping-bag"></i> Simulate Store Purchase</h3>
-                    <p style="font-size:11px;color:#888;margin-bottom:8px;">Items added here will appear in your pantry with expiry alerts</p>
-                    <div class="btn-row">
-                        <button class="buy-btn" onclick="simulatePurchase('Milk', 4.99, 3)">🥛 Milk ($4.99)</button>
-                        <button class="buy-btn" onclick="simulatePurchase('Bread', 3.49, 2)">🍞 Bread ($3.49)</button>
-                        <button class="buy-btn" onclick="simulatePurchase('Eggs', 5.99, 4)">🥚 Eggs ($5.99)</button>
-                        <button class="buy-btn" onclick="simulatePurchase('Cheese', 6.99, 5)">🧀 Cheese ($6.99)</button>
-                        <button class="buy-btn" onclick="simulatePurchase('Chicken', 8.99, 6)">🍗 Chicken ($8.99)</button>
-                        <button class="buy-btn" onclick="simulatePurchase('Yogurt', 3.99, 2)">🍦 Yogurt ($3.99)</button>
-                        <button class="buy-btn" onclick="simulatePurchase('Orange Juice', 4.49, 4)">🧃 OJ ($4.49)</button>
-                        <button class="buy-btn" onclick="simulatePurchase('Butter', 5.50, 5)">🧈 Butter ($5.50)</button>
-                        <button class="clear-btn" onclick="clearAllItems()">🗑️ Clear All</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- --- ALERTS TAB --- -->
-            <div class="tab-panel" id="panel-alerts">
-                <div id="alertsList">
-                    <div class="empty-state">
-                        <i class="fas fa-check-circle"></i>
-                        <h3>All Clear!</h3>
-                        <p>No alerts right now. Keep it up! 🎉</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- --- RECIPES TAB --- -->
-            <div class="tab-panel" id="panel-recipes">
-                <div id="recipesList">
-                    <div class="empty-state">
-                        <i class="fas fa-utensils"></i>
-                        <h3>No Recipes Yet</h3>
-                        <p>Add items to your pantry and we'll suggest recipes!</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- --- SHOPPING LIST TAB --- -->
-            <div class="tab-panel" id="panel-shopping">
-                <div id="shoppingList">
-                    <div class="empty-state">
-                        <i class="fas fa-list"></i>
-                        <h3>Your Shopping List</h3>
-                        <p>Items you need to buy will appear here.</p>
-                    </div>
-                </div>
-                <div style="margin-top:12px;">
-                    <button onclick="addShoppingItem()" class="add-list-btn">
-                        <i class="fas fa-plus"></i> Add Item
+                <h3>Register with Mobile Number</h3>
+                <p>Enter your mobile number to sync purchases from the shop</p>
+                <div class="reg-input-group">
+                    <span class="country-code">+91</span>
+                    <input type="tel" id="mobileInput" placeholder="9876543210" maxlength="10" />
+                    <button onclick="registerUser()" class="reg-btn">
+                        <i class="fas fa-check"></i> Register
                     </button>
                 </div>
+                <div class="reg-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>You'll receive expiry alerts for your purchases</span>
+                </div>
+                <div id="registrationError" class="reg-error" style="display:none;"></div>
             </div>
-
         </div>
 
         <!-- ============================================================ -->
-        <!-- BOTTOM NAV -->
+        <!-- MAIN APP CONTENT (Hidden until registration) -->
         <!-- ============================================================ -->
-        <div class="bottom-nav">
-            <button class="active" data-tab="pantry">
-                <i class="fas fa-warehouse"></i> Pantry
-                <span class="nav-badge" id="bottomPantryBadge">0</span>
-            </button>
-            <button data-tab="alerts">
-                <i class="fas fa-bell"></i> Alerts
-                <span class="nav-badge" id="bottomAlertBadge">0</span>
-            </button>
-            <button data-tab="recipes">
-                <i class="fas fa-utensils"></i> Recipes
-            </button>
-            <button data-tab="shopping">
-                <i class="fas fa-list"></i> List
-            </button>
+        <div id="mainAppContent" style="display:none;">
+
+            <!-- TAB NAVIGATION -->
+            <div class="tab-nav" id="tabNav">
+                <button class="active" data-tab="pantry">
+                    <i class="fas fa-warehouse"></i> Pantry
+                    <span class="badge-count" id="pantryBadge">0</span>
+                </button>
+                <button data-tab="alerts">
+                    <i class="fas fa-bell"></i> Alerts
+                    <span class="badge-count" id="alertBadge">0</span>
+                </button>
+                <button data-tab="recipes">
+                    <i class="fas fa-utensils"></i> Recipes
+                </button>
+                <button data-tab="shopping">
+                    <i class="fas fa-list"></i> List
+                </button>
+            </div>
+
+            <!-- TAB CONTENT -->
+            <div class="tab-content">
+                
+                <!-- --- PANTRY TAB --- -->
+                <div class="tab-panel active" id="panel-pantry">
+                    
+                    <!-- Sync Status -->
+                    <div class="sync-indicator">
+                        <span class="dot online" id="syncDot"></span>
+                        <span id="syncText">🟢 Connected to Shop</span>
+                        <span style="margin-left:auto;font-size:11px;color:#888;" id="lastSyncTime">Last sync: Now</span>
+                    </div>
+                    
+                    <!-- Alert Banner -->
+                    <div id="alertBanner" style="display:none;"></div>
+                    
+                    <!-- Pantry Items -->
+                    <div id="pantryList"></div>
+                    
+                    <!-- Simulate Purchase -->
+                    <div class="simulate-section">
+                        <h3><i class="fas fa-shopping-bag"></i> Simulate Store Purchase</h3>
+                        <p style="font-size:11px;color:#888;margin-bottom:8px;">Items added here will appear in your pantry with expiry alerts</p>
+                        <div class="btn-row">
+                            <button class="buy-btn" onclick="simulatePurchase('Milk', 4.99, 3)">🥛 Milk ($4.99)</button>
+                            <button class="buy-btn" onclick="simulatePurchase('Bread', 3.49, 2)">🍞 Bread ($3.49)</button>
+                            <button class="buy-btn" onclick="simulatePurchase('Eggs', 5.99, 4)">🥚 Eggs ($5.99)</button>
+                            <button class="buy-btn" onclick="simulatePurchase('Cheese', 6.99, 5)">🧀 Cheese ($6.99)</button>
+                            <button class="buy-btn" onclick="simulatePurchase('Chicken', 8.99, 6)">🍗 Chicken ($8.99)</button>
+                            <button class="buy-btn" onclick="simulatePurchase('Yogurt', 3.99, 2)">🍦 Yogurt ($3.99)</button>
+                            <button class="buy-btn" onclick="simulatePurchase('Orange Juice', 4.49, 4)">🧃 OJ ($4.49)</button>
+                            <button class="buy-btn" onclick="simulatePurchase('Butter', 5.50, 5)">🧈 Butter ($5.50)</button>
+                            <button class="clear-btn" onclick="clearAllItems()">🗑️ Clear All</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- --- ALERTS TAB --- -->
+                <div class="tab-panel" id="panel-alerts">
+                    <div id="alertsList">
+                        <div class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <h3>All Clear!</h3>
+                            <p>No alerts right now. Keep it up! 🎉</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- --- RECIPES TAB --- -->
+                <div class="tab-panel" id="panel-recipes">
+                    <div id="recipesList">
+                        <div class="empty-state">
+                            <i class="fas fa-utensils"></i>
+                            <h3>No Recipes Yet</h3>
+                            <p>Add items to your pantry and we'll suggest recipes!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- --- SHOPPING LIST TAB --- -->
+                <div class="tab-panel" id="panel-shopping">
+                    <div id="shoppingList">
+                        <div class="empty-state">
+                            <i class="fas fa-list"></i>
+                            <h3>Your Shopping List</h3>
+                            <p>Items you need to buy will appear here.</p>
+                        </div>
+                    </div>
+                    <div style="margin-top:12px;">
+                        <button onclick="addShoppingItem()" class="add-list-btn">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- BOTTOM NAV -->
+            <div class="bottom-nav">
+                <button class="active" data-tab="pantry">
+                    <i class="fas fa-warehouse"></i> Pantry
+                    <span class="nav-badge" id="bottomPantryBadge">0</span>
+                </button>
+                <button data-tab="alerts">
+                    <i class="fas fa-bell"></i> Alerts
+                    <span class="nav-badge" id="bottomAlertBadge">0</span>
+                </button>
+                <button data-tab="recipes">
+                    <i class="fas fa-utensils"></i> Recipes
+                </button>
+                <button data-tab="shopping">
+                    <i class="fas fa-list"></i> List
+                </button>
+            </div>
+
+            <!-- Logout Button -->
+            <div style="padding:10px 16px 70px 16px;text-align:center;">
+                <button onclick="logoutUser()" style="background:none;border:none;color:#c62828;font-size:12px;cursor:pointer;padding:8px 16px;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+
         </div>
 
     </div>
