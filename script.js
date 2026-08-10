@@ -4,7 +4,8 @@
 let pantryItems = [];
 let shoppingItems = [];
 let alertHistory = [];
-let userName = 'John';
+let registeredUser = null;
+let userName = 'Guest';
 
 // ================================================================
 // ICON MAP
@@ -37,12 +38,127 @@ function getEmoji(name) {
 }
 
 // ================================================================
-// LOAD DATA FROM LOCAL STORAGE (Simulating Cloud Sync)
+// REGISTRATION FUNCTIONS
 // ================================================================
-function loadData() {
-    const saved = localStorage.getItem('consumerProducts');
+
+function registerUser() {
+    const mobileInput = document.getElementById('mobileInput');
+    const mobile = mobileInput.value.trim();
+    const errorDiv = document.getElementById('registrationError');
+    
+    // Validate mobile number
+    if (mobile.length < 10) {
+        errorDiv.textContent = '⚠️ Please enter a valid 10-digit mobile number';
+        errorDiv.style.display = 'block';
+        errorDiv.classList.add('show');
+        mobileInput.focus();
+        return;
+    }
+    
+    if (!/^\d{10}$/.test(mobile)) {
+        errorDiv.textContent = '⚠️ Please enter only numbers (10 digits)';
+        errorDiv.style.display = 'block';
+        errorDiv.classList.add('show');
+        mobileInput.focus();
+        return;
+    }
+    
+    // Check if user already exists in shop's registered users
+    let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+    
+    // Format mobile with country code
+    const fullMobile = '+91' + mobile;
+    
+    // Check if already registered
+    const existingUser = registeredUsers.find(u => u.mobile === fullMobile);
+    
+    if (existingUser) {
+        // User exists - welcome back
+        registeredUser = existingUser;
+        userName = existingUser.name || 'User';
+        showToast('👋', 'Welcome Back!', `${userName}, your pantry is ready.`, 'success');
+    } else {
+        // New user - register
+        const newUser = {
+            id: Date.now(),
+            name: 'User',
+            mobile: fullMobile,
+            registeredAt: new Date().toISOString()
+        };
+        registeredUsers.push(newUser);
+        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+        registeredUser = newUser;
+        userName = 'User';
+        showToast('🎉', 'Registration Successful!', 'Welcome to SmartShelf!', 'success');
+    }
+    
+    // Save user to localStorage
+    localStorage.setItem('currentUser', JSON.stringify(registeredUser));
+    
+    // Hide registration, show app
+    document.getElementById('registrationSection').style.display = 'none';
+    document.getElementById('mainAppContent').style.display = 'block';
+    
+    // Update welcome message
+    document.getElementById('consumerName').textContent = userName;
+    document.getElementById('mobileDisplay').textContent = `📱 ${fullMobile}`;
+    document.getElementById('mobileDisplay').style.fontSize = '11px';
+    document.getElementById('mobileDisplay').style.opacity = '0.7';
+    
+    // Load user's data
+    loadUserData(fullMobile);
+    
+    // Update UI
+    updateUI();
+}
+
+function logoutUser() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('currentUser');
+        registeredUser = null;
+        pantryItems = [];
+        shoppingItems = [];
+        alertHistory = [];
+        
+        document.getElementById('registrationSection').style.display = 'flex';
+        document.getElementById('mainAppContent').style.display = 'none';
+        document.getElementById('mobileInput').value = '';
+        document.getElementById('registrationError').style.display = 'none';
+        
+        showToast('👋', 'Logged Out', 'See you next time!', 'info');
+    }
+}
+
+function checkRegistration() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+        registeredUser = JSON.parse(savedUser);
+        userName = registeredUser.name || 'User';
+        
+        document.getElementById('registrationSection').style.display = 'none';
+        document.getElementById('mainAppContent').style.display = 'block';
+        document.getElementById('consumerName').textContent = userName;
+        document.getElementById('mobileDisplay').textContent = `📱 ${registeredUser.mobile}`;
+        
+        loadUserData(registeredUser.mobile);
+        updateUI();
+        return true;
+    }
+    return false;
+}
+
+// ================================================================
+// LOAD USER DATA FROM LOCAL STORAGE
+// ================================================================
+function loadUserData(mobile) {
+    const storageKey = `consumer_${mobile}`;
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
-        pantryItems = JSON.parse(saved);
+        const data = JSON.parse(saved);
+        pantryItems = data.pantryItems || [];
+        shoppingItems = data.shoppingList || [];
+        alertHistory = data.alertHistory || [];
+        
         pantryItems.forEach(p => {
             p.expiry = new Date(p.expiry);
             p.purchaseDate = new Date(p.purchaseDate);
@@ -53,44 +169,67 @@ function loadData() {
                 'expired': false
             };
         });
+    } else {
+        // Load demo data for new users
+        loadDemoData();
     }
+}
+
+// ================================================================
+// SAVE USER DATA
+// ================================================================
+function saveUserData() {
+    if (!registeredUser) return;
     
-    const savedList = localStorage.getItem('consumerShoppingList');
-    if (savedList) {
-        shoppingItems = JSON.parse(savedList);
-    }
+    const storageKey = `consumer_${registeredUser.mobile}`;
+    localStorage.setItem(storageKey, JSON.stringify({
+        pantryItems: pantryItems,
+        shoppingList: shoppingItems,
+        alertHistory: alertHistory
+    }));
 }
 
 // ================================================================
-// SAVE DATA
-// ================================================================
-function saveData() {
-    localStorage.setItem('consumerProducts', JSON.stringify(pantryItems));
-    localStorage.setItem('consumerShoppingList', JSON.stringify(shoppingItems));
-}
-
-// ================================================================
-// CHECK FOR NEW ITEMS FROM SHOP
+// CHECK FOR NEW ITEMS FROM SHOP (Based on mobile number)
 // ================================================================
 function checkForNewItems() {
-    const saved = localStorage.getItem('consumerProducts');
+    if (!registeredUser) return;
+    
+    const mobile = registeredUser.mobile;
+    const shopKey = `shop_purchases_${mobile}`;
+    const saved = localStorage.getItem(shopKey);
+    
     if (saved) {
         const newItems = JSON.parse(saved);
-        if (newItems.length > pantryItems.length) {
-            const newCount = newItems.length - pantryItems.length;
-            showToast('📦', 'New Items Added!', `${newCount} new item(s) synced from shop.`, 'success');
-            newItems.forEach(newItem => {
-                if (!pantryItems.find(p => p.id === newItem.id)) {
-                    pantryItems.push({
-                        ...newItem,
-                        expiry: new Date(newItem.expiry),
-                        purchaseDate: new Date(newItem.purchaseDate)
-                    });
-                }
-            });
-            saveData();
+        let addedCount = 0;
+        
+        newItems.forEach(newItem => {
+            // Check if item already exists in pantry
+            if (!pantryItems.find(p => p.id === newItem.id && p.syncedFromShop)) {
+                pantryItems.push({
+                    ...newItem,
+                    expiry: new Date(newItem.expiry),
+                    purchaseDate: new Date(newItem.purchaseDate),
+                    syncedFromShop: true,
+                    alertSent: {
+                        '7d': false,
+                        '3d': false,
+                        '1d': false,
+                        'expired': false
+                    }
+                });
+                addedCount++;
+            }
+        });
+        
+        if (addedCount > 0) {
+            showToast('📦', 'New Items Synced!', `${addedCount} item(s) from shop added to your pantry.`, 'success');
+            saveUserData();
             updateUI();
         }
+        
+        // Clear the shop purchases after syncing
+        localStorage.removeItem(shopKey);
     }
 }
 
@@ -113,6 +252,7 @@ function addToPantry(name, price, expiryDays) {
         purchaseDate: now,
         isConsumed: false,
         discount: Math.random() > 0.5 ? Math.floor(Math.random() * 30) + 10 : 0,
+        syncedFromShop: false,
         alertSent: {
             '7d': false,
             '3d': false,
@@ -122,7 +262,7 @@ function addToPantry(name, price, expiryDays) {
     };
 
     pantryItems.unshift(item);
-    saveData();
+    saveUserData();
     
     const discountText = item.discount > 0 ? ` (${item.discount}% off!)` : '';
     showToast('🛒', 'Added to Pantry!', `${name} added${discountText} - Expires ${formatDate(expiry)}`, 'success');
@@ -134,6 +274,11 @@ function addToPantry(name, price, expiryDays) {
 // SIMULATE PURCHASE
 // ================================================================
 function simulatePurchase(name, price, expiryDays) {
+    if (!registeredUser) {
+        showToast('⚠️', 'Not Registered', 'Please register with your mobile number first.', 'warning');
+        return;
+    }
+    
     const days = expiryDays || Math.floor(Math.random() * 9) + 1;
     addToPantry(name, price, days);
     
@@ -143,7 +288,7 @@ function simulatePurchase(name, price, expiryDays) {
             name: name,
             checked: false
         });
-        saveData();
+        saveUserData();
     }
 }
 
@@ -201,7 +346,7 @@ function checkAlerts() {
     
     if (newAlerts.length > 0) {
         alertHistory = [...newAlerts, ...alertHistory];
-        saveData();
+        saveUserData();
         if (newAlerts.some(a => a.type === 'danger')) {
             playAlertSound('danger');
         } else {
@@ -319,7 +464,7 @@ function consumeItem(id) {
     const item = pantryItems.find(p => p.id === id);
     if (item) {
         item.isConsumed = true;
-        saveData();
+        saveUserData();
         showToast('✅', 'Used!', `${item.name} marked as consumed.`, 'success');
         updateUI();
     }
@@ -332,7 +477,7 @@ function deleteItem(id) {
     const item = pantryItems.find(p => p.id === id);
     if (item) {
         pantryItems = pantryItems.filter(p => p.id !== id);
-        saveData();
+        saveUserData();
         showToast('🗑️', 'Removed', `${item.name} removed from pantry.`, 'info');
         updateUI();
     }
@@ -345,7 +490,7 @@ function clearAllItems() {
     if (pantryItems.length === 0) return;
     if (confirm('Remove all items from pantry?')) {
         pantryItems = [];
-        saveData();
+        saveUserData();
         showToast('🗑️', 'Cleared', 'All items removed from pantry.', 'info');
         updateUI();
     }
@@ -362,7 +507,7 @@ function addShoppingItem() {
             name: name.trim(),
             checked: false
         });
-        saveData();
+        saveUserData();
         updateUI();
     }
 }
@@ -371,14 +516,14 @@ function toggleShoppingItem(id) {
     const item = shoppingItems.find(s => s.id === id);
     if (item) {
         item.checked = !item.checked;
-        saveData();
+        saveUserData();
         updateUI();
     }
 }
 
 function removeShoppingItem(id) {
     shoppingItems = shoppingItems.filter(s => s.id !== id);
-    saveData();
+    saveUserData();
     updateUI();
 }
 
@@ -409,6 +554,8 @@ document.querySelectorAll('.tab-nav button, .bottom-nav button').forEach(btn => 
 // UPDATE UI
 // ================================================================
 function updateUI() {
+    if (!registeredUser) return;
+    
     checkAlerts();
     
     const now = new Date();
@@ -458,12 +605,13 @@ function updateUI() {
                                status.status === 'expiring' ? 'urgent' : '';
             
             const discountText = item.discount > 0 ? ` (${item.discount}% off)` : '';
+            const syncedTag = item.syncedFromShop ? '🔄' : '';
             
             html += `
                 <div class="pantry-item">
                     <div class="icon-box ${iconClass}">${emoji}</div>
                     <div class="info">
-                        <div class="name">${item.name}${discountText}</div>
+                        <div class="name">${item.name}${discountText} ${syncedTag}</div>
                         <div class="details">
                             <span>📅 <span class="expiry ${expiryClass}">${formatDate(item.expiry)}</span></span>
                             <span>⏰ ${formatTimeLeft(status.daysLeft)}</span>
@@ -711,6 +859,7 @@ function loadDemoData() {
             purchaseDate: now,
             isConsumed: false,
             discount: item.days < 3 ? 30 : (item.days < 5 ? 15 : 0),
+            syncedFromShop: false,
             alertSent: {
                 '7d': false,
                 '3d': false,
@@ -726,31 +875,47 @@ function loadDemoData() {
         { id: 3, name: 'Tomatoes', checked: true }
     ];
     
-    saveData();
+    saveUserData();
     showToast('🎯', 'Demo Loaded!', '6 demo items added to your pantry.', 'success');
     updateUI();
 }
 
 // ================================================================
+// ENTER KEY FOR MOBILE INPUT
+// ================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('mobileInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            registerUser();
+        }
+    });
+});
+
+// ================================================================
 // INIT
 // ================================================================
 function init() {
-    loadData();
+    const isRegistered = checkRegistration();
     
-    if (pantryItems.length === 0) {
-        loadDemoData();
-    } else {
-        updateUI();
+    if (!isRegistered) {
+        // Show registration
+        document.getElementById('registrationSection').style.display = 'flex';
+        document.getElementById('mainAppContent').style.display = 'none';
+        document.getElementById('mobileInput').focus();
     }
     
-    // Check for new items every 5 seconds (simulating real-time sync)
+    // Check for new items every 5 seconds
     setInterval(() => {
-        checkForNewItems();
+        if (registeredUser) {
+            checkForNewItems();
+        }
     }, 5000);
     
     // Update UI every second
     setInterval(() => {
-        updateUI();
+        if (registeredUser) {
+            updateUI();
+        }
     }, 1000);
 }
 
