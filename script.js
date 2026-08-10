@@ -219,23 +219,19 @@ function saveUserData() {
     
     const pantryData = {};
     pantryItems.forEach(p => {
-        const key = p.firebaseKey || Date.now() + '_' + Math.random();
+        // ✅ Use a valid Firebase key (no dots, slashes, etc.)
+        const key = p.firebaseKey || `item_${p.id}`;
         pantryData[key] = {
             id: p.id,
             name: p.name,
             price: p.price,
-            // ✅ FIX: Check if expiry is already a string or Date
-            expiry: typeof p.expiry === 'string' ? p.expiry : p.expiry.toISOString(),
-            purchaseDate: typeof p.purchaseDate === 'string' ? p.purchaseDate : p.purchaseDate.toISOString(),
+            expiry: p.expiry instanceof Date ? p.expiry.toISOString() : p.expiry,
+            purchaseDate: p.purchaseDate instanceof Date ? p.purchaseDate.toISOString() : p.purchaseDate,
             isConsumed: p.isConsumed || false,
             discount: p.discount || 0,
             syncedFromShop: p.syncedFromShop || false,
             alertSent: p.alertSent || { '7d': false, '3d': false, '1d': false, 'expired': false }
         };
-        if (p.firebaseKey) {
-            pantryData[key].firebaseKey = p.firebaseKey;
-        }
-        delete pantryData[key].firebaseKey;
     });
     
     userRef.update({
@@ -260,9 +256,7 @@ function addToPantry(name, price, expiryDays) {
     const now = new Date();
     const expiry = new Date(now);
     expiry.setDate(expiry.getDate() + expiryDays);
-    
-    const randomMins = Math.floor(Math.random() * 5) + 1;
-    expiry.setMinutes(expiry.getMinutes() + randomMins);
+    expiry.setMinutes(expiry.getMinutes() + Math.floor(Math.random() * 5) + 1);
 
     const item = {
         id: Date.now(),
