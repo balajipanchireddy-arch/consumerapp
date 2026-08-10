@@ -64,7 +64,6 @@ function registerUser() {
     const mobile = mobileInput.value.trim();
     const errorDiv = document.getElementById('registrationError');
     
-    // Validate mobile number
     if (mobile.length < 10) {
         errorDiv.textContent = '⚠️ Please enter a valid 10-digit mobile number';
         errorDiv.style.display = 'block';
@@ -82,19 +81,16 @@ function registerUser() {
     }
     
     const fullMobile = '+91' + mobile;
-    
-    // Check if user exists in Firebase
     const userRef = db.ref('users/' + fullMobile);
+    
     userRef.once('value').then(snapshot => {
         const data = snapshot.val();
         
         if (data) {
-            // User exists - welcome back
             registeredUser = data;
             userName = data.name || 'User';
             showToast('👋', 'Welcome Back!', `${userName}, your pantry is ready.`, 'success');
         } else {
-            // New user - register
             const newUser = {
                 name: 'User',
                 mobile: fullMobile,
@@ -106,20 +102,15 @@ function registerUser() {
             showToast('🎉', 'Registration Successful!', 'Welcome to SmartShelf!', 'success');
         }
         
-        // Store user in localStorage for session persistence
         localStorage.setItem('currentUser', JSON.stringify(registeredUser));
         
-        // Hide registration, show app
         document.getElementById('registrationSection').style.display = 'none';
         document.getElementById('mainAppContent').style.display = 'block';
-        
-        // Update welcome message
         document.getElementById('consumerName').textContent = userName;
         document.getElementById('mobileDisplay').textContent = `📱 ${fullMobile}`;
         document.getElementById('mobileDisplay').style.fontSize = '11px';
         document.getElementById('mobileDisplay').style.opacity = '0.7';
         
-        // Load user's data from Firebase
         loadUserData(fullMobile);
         updateUI();
     }).catch(error => {
@@ -145,7 +136,6 @@ function logoutUser() {
         
         showToast('👋', 'Logged Out', 'See you next time!', 'info');
         
-        // Unsubscribe from Firebase listener
         if (window._pantryListener) {
             window._pantryListener();
             window._pantryListener = null;
@@ -177,28 +167,23 @@ function checkRegistration() {
 function loadUserData(mobile) {
     const userRef = db.ref('users/' + mobile);
     
-    // Remove existing listener
     if (window._pantryListener) {
         window._pantryListener();
         window._pantryListener = null;
     }
     
-    // Set up real-time listener
     window._pantryListener = userRef.on('value', function(snapshot) {
         const data = snapshot.val();
         if (data) {
-            // FIX: Convert pantryItems object to array
+            // ✅ FIX: Convert object to array
             const pantryData = data.pantryItems || {};
-            const shoppingData = data.shoppingList || [];
-            const alertData = data.alertHistory || [];
             
             // Convert object to array
             const pantryArray = Object.keys(pantryData).map(key => ({
                 ...pantryData[key],
-                firebaseKey: key  // Keep the key for updates/deletes
+                firebaseKey: key
             }));
             
-            // Check if there are new items (for notification)
             const oldCount = pantryItems.length;
             
             pantryItems = pantryArray.map(p => ({
@@ -213,10 +198,9 @@ function loadUserData(mobile) {
                 }
             }));
             
-            shoppingItems = shoppingData || [];
-            alertHistory = alertData || [];
+            shoppingItems = data.shoppingList || [];
+            alertHistory = data.alertHistory || [];
             
-            // Show notification for new items
             if (pantryItems.length > oldCount && oldCount > 0) {
                 const newCount = pantryItems.length - oldCount;
                 showToast('📦', 'New Items Added!', `${newCount} item(s) synced from shop.`, 'success');
@@ -236,7 +220,7 @@ function saveUserData() {
     const mobile = registeredUser.mobile;
     const userRef = db.ref('users/' + mobile);
     
-    // Prepare data for Firebase - Convert back to object format
+    // Convert array back to object for Firebase
     const pantryData = {};
     pantryItems.forEach(p => {
         const key = p.firebaseKey || Date.now() + '_' + Math.random();
@@ -245,7 +229,6 @@ function saveUserData() {
             expiry: p.expiry.toISOString(),
             purchaseDate: p.purchaseDate.toISOString()
         };
-        // Remove firebaseKey from stored data
         delete pantryData[key].firebaseKey;
     });
     
@@ -619,7 +602,6 @@ function updateUI() {
         totalItems++;
     });
     
-    // --- Pantry ---
     const pantryContainer = document.getElementById('pantryList');
     let html = '';
     
@@ -689,7 +671,6 @@ function updateUI() {
     }
     pantryContainer.innerHTML = html;
     
-    // --- Alert Banner ---
     const banner = document.getElementById('alertBanner');
     const urgentItems = sortedItems.filter(item => {
         const status = getItemStatus(item);
@@ -725,7 +706,6 @@ function updateUI() {
         banner.style.display = 'none';
     }
     
-    // --- Alerts Tab ---
     const alertsContainer = document.getElementById('alertsList');
     const activeAlerts = alertHistory.filter(a => {
         const item = pantryItems.find(p => p.id === a.item.id);
@@ -759,7 +739,6 @@ function updateUI() {
         alertsContainer.innerHTML = alertHtml;
     }
     
-    // --- Recipes ---
     const recipesContainer = document.getElementById('recipesList');
     const expiringItems = sortedItems.filter(item => {
         const status = getItemStatus(item);
@@ -826,7 +805,6 @@ function updateUI() {
         }
     }
     
-    // --- Shopping List ---
     const shoppingContainer = document.getElementById('shoppingList');
     if (shoppingItems.length === 0) {
         shoppingContainer.innerHTML = `
@@ -852,7 +830,6 @@ function updateUI() {
         shoppingContainer.innerHTML = shopHtml;
     }
     
-    // --- Stats ---
     document.getElementById('totalItems').textContent = totalItems;
     document.getElementById('expiringItems').textContent = expiringCount;
     document.getElementById('expiredItems').textContent = expiredCount;
@@ -862,7 +839,6 @@ function updateUI() {
     document.getElementById('bottomPantryBadge').textContent = totalItems;
     document.getElementById('bottomAlertBadge').textContent = activeAlerts.length;
     
-    // --- Sync Status ---
     document.getElementById('lastSyncTime').textContent = `Last sync: ${formatTime(new Date())}`;
     document.getElementById('liveTime').textContent = `⏰ ${formatTime(new Date())}`;
 }
