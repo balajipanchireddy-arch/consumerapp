@@ -172,7 +172,7 @@ function checkRegistration() {
 }
 
 // ================================================================
-// LOAD USER DATA FROM FIREBASE (Real-time)
+// LOAD USER DATA FROM FIREBASE (Real-time) - FIXED
 // ================================================================
 function loadUserData(mobile) {
     const userRef = db.ref('users/' + mobile);
@@ -187,14 +187,21 @@ function loadUserData(mobile) {
     window._pantryListener = userRef.on('value', function(snapshot) {
         const data = snapshot.val();
         if (data) {
-            const pantryData = data.pantryItems || [];
+            // FIX: Convert pantryItems object to array
+            const pantryData = data.pantryItems || {};
             const shoppingData = data.shoppingList || [];
             const alertData = data.alertHistory || [];
+            
+            // Convert object to array
+            const pantryArray = Object.keys(pantryData).map(key => ({
+                ...pantryData[key],
+                firebaseKey: key  // Keep the key for updates/deletes
+            }));
             
             // Check if there are new items (for notification)
             const oldCount = pantryItems.length;
             
-            pantryItems = pantryData.map(p => ({
+            pantryItems = pantryArray.map(p => ({
                 ...p,
                 expiry: new Date(p.expiry),
                 purchaseDate: new Date(p.purchaseDate),
@@ -229,13 +236,21 @@ function saveUserData() {
     const mobile = registeredUser.mobile;
     const userRef = db.ref('users/' + mobile);
     
-    // Prepare data for Firebase
-    const data = {
-        pantryItems: pantryItems.map(p => ({
+    // Prepare data for Firebase - Convert back to object format
+    const pantryData = {};
+    pantryItems.forEach(p => {
+        const key = p.firebaseKey || Date.now() + '_' + Math.random();
+        pantryData[key] = {
             ...p,
             expiry: p.expiry.toISOString(),
             purchaseDate: p.purchaseDate.toISOString()
-        })),
+        };
+        // Remove firebaseKey from stored data
+        delete pantryData[key].firebaseKey;
+    });
+    
+    const data = {
+        pantryItems: pantryData,
         shoppingList: shoppingItems,
         alertHistory: alertHistory,
         name: registeredUser.name || 'User',
