@@ -179,11 +179,9 @@ function loadUserData(mobile) {
             return;
         }
         
-        // Convert pantryItems object to array
         const pantryData = data.pantryItems || {};
         const oldCount = pantryItems.length;
         
-        // ✅ Use Object.keys() to convert object to array
         const pantryArray = Object.keys(pantryData).map(key => ({
             ...pantryData[key],
             firebaseKey: key
@@ -211,7 +209,7 @@ function loadUserData(mobile) {
 }
 
 // ================================================================
-// SAVE USER DATA TO FIREBASE
+// ✅ FIXED: SAVE USER DATA TO FIREBASE
 // ================================================================
 function saveUserData() {
     if (!registeredUser) return;
@@ -219,15 +217,24 @@ function saveUserData() {
     const mobile = registeredUser.mobile;
     const userRef = db.ref('users/' + mobile);
     
-    // Convert array back to object for Firebase
     const pantryData = {};
     pantryItems.forEach(p => {
         const key = p.firebaseKey || Date.now() + '_' + Math.random();
         pantryData[key] = {
-            ...p,
-            expiry: p.expiry.toISOString(),
-            purchaseDate: p.purchaseDate.toISOString()
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            // ✅ FIX: Check if expiry is already a string or Date
+            expiry: typeof p.expiry === 'string' ? p.expiry : p.expiry.toISOString(),
+            purchaseDate: typeof p.purchaseDate === 'string' ? p.purchaseDate : p.purchaseDate.toISOString(),
+            isConsumed: p.isConsumed || false,
+            discount: p.discount || 0,
+            syncedFromShop: p.syncedFromShop || false,
+            alertSent: p.alertSent || { '7d': false, '3d': false, '1d': false, 'expired': false }
         };
+        if (p.firebaseKey) {
+            pantryData[key].firebaseKey = p.firebaseKey;
+        }
         delete pantryData[key].firebaseKey;
     });
     
@@ -242,7 +249,7 @@ function saveUserData() {
 }
 
 // ================================================================
-// ✅ FIXED: ADD ITEM TO PANTRY
+// ADD ITEM TO PANTRY
 // ================================================================
 function addToPantry(name, price, expiryDays) {
     if (!registeredUser) {
@@ -261,8 +268,8 @@ function addToPantry(name, price, expiryDays) {
         id: Date.now(),
         name: name,
         price: price,
-        expiry: expiry.toISOString(),
-        purchaseDate: now.toISOString(),
+        expiry: expiry,
+        purchaseDate: now,
         isConsumed: false,
         discount: Math.random() > 0.5 ? Math.floor(Math.random() * 30) + 10 : 0,
         syncedFromShop: false,
@@ -286,7 +293,7 @@ function addToPantry(name, price, expiryDays) {
 }
 
 // ================================================================
-// ✅ FIXED: SIMULATE PURCHASE
+// SIMULATE PURCHASE
 // ================================================================
 function simulatePurchase(name, price, expiryDays) {
     if (!registeredUser) {
